@@ -1,0 +1,14 @@
+# ============================================
+# PYPROJECT.TOML - API DJ Sound & Lights
+# ============================================
+
+[project]
+name = "dj-sound-lights-api"
+version = "1.0.0"
+description = "API para gestión de eventos, sonido y luces (DJ, equipment, clients, bookings)"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "fastapi[standard]==0.128.0",
+]

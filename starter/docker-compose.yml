@@ -1,0 +1,15 @@
+# ============================================
+# DOCKER COMPOSE - API DJ Sound & Lights
+# ============================================
+
+services:
+  api:
+    build: .
+    container_name: dj_sound_lights_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
