@@ -40,7 +40,68 @@ async def root():
     return {
         "message": "DJ Sound & Lights API - Week 03"
     }
+from src.schemas import (
+    Event,
+    EventResponse,
+    User,
+    Token
+)
 
+from src.crud import (
+    create_event,
+    get_events,
+    get_event,
+    delete_event,
+    create_user,
+    get_user
+)
+
+from src.auth import (
+    verify_password,
+    create_access_token
+)
+# ============================================
+# LOGIN
+# ============================================
+
+@app.post("/login", response_model=Token)
+def login(
+    user: User,
+    db: Session = Depends(get_db)
+):
+
+    db_user = get_user(
+        db,
+        user.username
+    )
+
+    if not db_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Credenciales inválidas"
+        )
+
+    valid_password = verify_password(
+        user.password,
+        db_user.password
+    )
+
+    if not valid_password:
+        raise HTTPException(
+            status_code=401,
+            detail="Credenciales inválidas"
+        )
+
+    token = create_access_token(
+        data={
+            "sub": db_user.username
+        }
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer"
+    }
 # ============================================
 # CREATE EVENT
 # ============================================
@@ -113,3 +174,23 @@ async def health():
     return {
         "status": "healthy"
     }
+from src.schemas import (
+    Event,
+    EventResponse,
+    User,
+    Token
+)
+
+from src.crud import (
+    create_event,
+    get_events,
+    get_event,
+    delete_event,
+    create_user,
+    get_user
+)
+
+from src.auth import (
+    verify_password,
+    create_access_token
+)

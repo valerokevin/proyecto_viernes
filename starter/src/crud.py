@@ -35,3 +35,35 @@ def delete_event(db: Session, event_id: int):
         db.commit()
 
     return event
+from src.models import UserModel
+from src.auth import hash_password
+
+# ============================================
+# USERS
+# ============================================
+
+def create_user(
+    db: Session,
+    username: str,
+    password: str
+):
+
+    user = UserModel(
+        username=username,
+        password=hash_password(password)
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return user
+
+def get_user(
+    db: Session,
+    username: str
+):
+
+    return db.query(UserModel).filter(
+        UserModel.username == username
+    ).first()

@@ -1,5 +1,9 @@
 from pydantic import BaseModel
 
+# ============================================
+# EVENT SCHEMAS
+# ============================================
+
 class Event(BaseModel):
     name: str
     location: str
@@ -10,3 +14,15 @@ class EventResponse(Event):
 
     class Config:
         from_attributes = True
+
+# ============================================
+# USER SCHEMAS
+# ============================================
+
+class User(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
