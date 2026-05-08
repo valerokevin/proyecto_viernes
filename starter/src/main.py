@@ -1,117 +1,102 @@
 from fastapi import FastAPI, HTTPException
-
-# ============================================
-# CONFIGURACIÓN
-# ============================================
-
-MESSAGES: dict[str, str] = {
-    "es": "Hola {name}, gracias por confiar en nuestros servicios de DJ y sonido.",
-    "en": "Hello {name}, thank you for choosing our DJ and sound services.",
-    "fr": "Bonjour {name}, merci de faire confiance à nos services DJ et son."
-}
-
-SUPPORTED_LANGUAGES = list(MESSAGES.keys())
-
-# ============================================
-# APP
-# ============================================
+from src.schemas import Event
+from src.models import events
 
 app = FastAPI(
     title="DJ Sound & Lights API",
-    description="API para gestión de eventos, sonido y luces",
-    version="1.0.0"
+    description="CRUD de eventos para DJ y sonido",
+    version="2.0.0"
 )
 
 # ============================================
-# RF-01: INFO API
+# ROOT
 # ============================================
 
 @app.get("/")
-async def root() -> dict[str, str]:
+async def root():
     return {
-        "name": "DJ Sound & Lights API",
-        "version": "1.0.0",
-        "domain": "events-entertainment"
+        "message": "DJ Sound & Lights API - Week 02"
     }
 
 # ============================================
-# RF-02: BIENVENIDA
+# GET ALL EVENTS
 # ============================================
 
-@app.get("/client/{name}")
-async def welcome_client(
-    name: str,
-    language: str = "es"
-) -> dict[str, str]:
+@app.get("/events")
+async def get_events():
+    return events
 
-    template = MESSAGES.get(language, MESSAGES["es"])
-    message = template.format(name=name)
+# ============================================
+# GET EVENT BY ID
+# ============================================
+
+@app.get("/events/{event_id}")
+async def get_event(event_id: int):
+
+    for event in events:
+        if event["id"] == event_id:
+            return event
+
+    raise HTTPException(status_code=404, detail="Evento no encontrado")
+
+# ============================================
+# CREATE EVENT
+# ============================================
+
+@app.post("/events")
+async def create_event(event: Event):
+
+    events.append(event.dict())
 
     return {
-        "message": message,
-        "client": name,
-        "language": language if language in MESSAGES else "es"
+        "message": "Evento creado correctamente",
+        "event": event
     }
 
 # ============================================
-# RF-03: INFORMACIÓN DE EVENTO
+# UPDATE EVENT
 # ============================================
 
-@app.get("/event/{event_id}/info")
-async def event_info(
-    event_id: str,
-    detail_level: str = "basic"
-) -> dict:
+@app.put("/events/{event_id}")
+async def update_event(event_id: int, updated_event: Event):
 
-    basic_info = {
-        "event_id": event_id,
-        "type": "fiesta",
-        "status": "programado"
-    }
+    for index, event in enumerate(events):
 
-    if detail_level == "full":
-        basic_info.update({
-            "client": "Juan Pérez",
-            "location": "Bogotá",
-            "equipment": ["luces LED", "sonido profesional", "DJ controller"],
-            "duration": "6 horas"
-        })
+        if event["id"] == event_id:
+            events[index] = updated_event.dict()
 
-    return basic_info
+            return {
+                "message": "Evento actualizado",
+                "event": updated_event
+            }
+
+    raise HTTPException(status_code=404, detail="Evento no encontrado")
 
 # ============================================
-# RF-04: SERVICIO SEGÚN HORARIO
+# DELETE EVENT
 # ============================================
 
-@app.get("/service/schedule")
-async def service_schedule(hour: int) -> dict:
+@app.delete("/events/{event_id}")
+async def delete_event(event_id: int):
 
-    if hour < 0 or hour > 23:
-        raise HTTPException(status_code=400, detail="Hora inválida (0-23)")
+    for index, event in enumerate(events):
 
-    if 8 <= hour <= 17:
-        return {
-            "message": "Horario administrativo - Reservas y atención",
-            "services": ["bookings", "clients"]
-        }
-    elif 18 <= hour <= 23:
-        return {
-            "message": "Horario de eventos - Servicio activo",
-            "services": ["events", "DJ en vivo", "luces y sonido"]
-        }
-    else:
-        return {
-            "message": "Fuera de servicio",
-            "services": []
-        }
+        if event["id"] == event_id:
+            deleted = events.pop(index)
+
+            return {
+                "message": "Evento eliminado",
+                "event": deleted
+            }
+
+    raise HTTPException(status_code=404, detail="Evento no encontrado")
 
 # ============================================
-# RF-05: HEALTH CHECK
+# HEALTH CHECK
 # ============================================
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
+async def health():
     return {
-        "status": "healthy",
-        "domain": "DJ Sound & Lights"
+        "status": "healthy"
     }
