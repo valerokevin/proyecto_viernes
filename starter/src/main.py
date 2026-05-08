@@ -1,12 +1,35 @@
-from fastapi import FastAPI, HTTPException
-from src.schemas import Event
-from src.models import events
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from src.database import SessionLocal, engine
+from src.models import Base
+from src.schemas import Event, EventResponse
+from src.crud import (
+    create_event,
+    get_events,
+    get_event,
+    delete_event
+)
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="DJ Sound & Lights API",
-    description="CRUD de eventos para DJ y sonido",
-    version="2.0.0"
+    version="3.0.0"
 )
+
+# ============================================
+# DATABASE DEPENDENCY
+# ============================================
+
+def get_db():
+
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
 
 # ============================================
 # ROOT
@@ -15,84 +38,74 @@ app = FastAPI(
 @app.get("/")
 async def root():
     return {
-        "message": "DJ Sound & Lights API - Week 02"
+        "message": "DJ Sound & Lights API - Week 03"
     }
-
-# ============================================
-# GET ALL EVENTS
-# ============================================
-
-@app.get("/events")
-async def get_events():
-    return events
-
-# ============================================
-# GET EVENT BY ID
-# ============================================
-
-@app.get("/events/{event_id}")
-async def get_event(event_id: int):
-
-    for event in events:
-        if event["id"] == event_id:
-            return event
-
-    raise HTTPException(status_code=404, detail="Evento no encontrado")
 
 # ============================================
 # CREATE EVENT
 # ============================================
 
-@app.post("/events")
-async def create_event(event: Event):
+@app.post("/events", response_model=EventResponse)
+def create_new_event(
+    event: Event,
+    db: Session = Depends(get_db)
+):
 
-    events.append(event.dict())
-
-    return {
-        "message": "Evento creado correctamente",
-        "event": event
-    }
+    return create_event(db, event)
 
 # ============================================
-# UPDATE EVENT
+# GET EVENTS
 # ============================================
 
-@app.put("/events/{event_id}")
-async def update_event(event_id: int, updated_event: Event):
+@app.get("/events", response_model=list[EventResponse])
+def read_events(db: Session = Depends(get_db)):
 
-    for index, event in enumerate(events):
+    return get_events(db)
 
-        if event["id"] == event_id:
-            events[index] = updated_event.dict()
+# ============================================
+# GET EVENT BY ID
+# ============================================
 
-            return {
-                "message": "Evento actualizado",
-                "event": updated_event
-            }
+@app.get("/events/{event_id}", response_model=EventResponse)
+def read_event(
+    event_id: int,
+    db: Session = Depends(get_db)
+):
 
-    raise HTTPException(status_code=404, detail="Evento no encontrado")
+    event = get_event(db, event_id)
+
+    if not event:
+        raise HTTPException(
+            status_code=404,
+            detail="Evento no encontrado"
+        )
+
+    return event
 
 # ============================================
 # DELETE EVENT
 # ============================================
 
 @app.delete("/events/{event_id}")
-async def delete_event(event_id: int):
+def remove_event(
+    event_id: int,
+    db: Session = Depends(get_db)
+):
 
-    for index, event in enumerate(events):
+    event = delete_event(db, event_id)
 
-        if event["id"] == event_id:
-            deleted = events.pop(index)
+    if not event:
+        raise HTTPException(
+            status_code=404,
+            detail="Evento no encontrado"
+        )
 
-            return {
-                "message": "Evento eliminado",
-                "event": deleted
-            }
-
-    raise HTTPException(status_code=404, detail="Evento no encontrado")
+    return {
+        "message": "Evento eliminado"
+    }
 
 # ============================================
-# HEALTH CHECK
+# HEALTH
 # ============================================
 
 @app.get("/health")
